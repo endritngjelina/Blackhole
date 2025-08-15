@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Black Hole Space-Time Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            background: #000;
+            font-family: 'Courier New', monospace;
+            color: #00ffff;
+        }
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+            backdrop-filter: blur(15px);
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #00ffff;
+        }
+        input[type="range"] {
+            width: 200px;
+            margin-right: 10px;
+            background: transparent;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-track {
+            background: #333;
+            height: 4px;
+            border-radius: 2px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            background: #ff6b35;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+        }
+        .value {
+            color: #ff6b35;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
+        }
+        button {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-right: 10px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.3);
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 107, 53, 0.5);
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        #info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+            backdrop-filter: blur(15px);
+            font-size: 11px;
+            max-width: 350px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+        #performance {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #00ff00;
+            backdrop-filter: blur(10px);
+            font-size: 11px;
+            color: #00ff00;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ffff;
+            font-size: 24px;
+            z-index: 1000;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .physics-value {
+            color: #ff6b35;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ff0000;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading">
+            <div>Initializing Space-Time Continuum...</div>
+            <div style="font-size: 14px; margin-top: 10px;">Loading relativistic effects...</div>
+        </div>
+        
+        <div id="controls">
+            <h3 style="margin-bottom: 15px; color: #ff6b35; text-shadow: 0 0 10px rgba(255, 107, 53, 0.5);">BLACK HOLE CONTROLS</h3>
+            
+            <div class="control-group">
+                <label>Mass (Solar Masses): <span class="value" id="massValue">5.0</span></label>
+                <input type="range" id="massSlider" min="1" max="100" step="0.5" value="5">
+            </div>
+            
+            <div class="control-group">
+                <label>Spin (Kerr Parameter): <span class="value" id="spinValue">0.5</span></label>
+                <input type="range" id="spinSlider" min="0" max="0.998" step="0.001" value="0.5">
+            </div>
+            
+            <div class="control-group">
+                <label>Accretion Rate: <span class="value" id="accretionValue">0.7</span></label>
+                <input type="range" id="accretionSlider" min="0.1" max="3.0" step="0.1" value="0.7">
+            </div>
+            
+            <div class="control-group">
+                <label>Magnetic Field: <span class="value" id="magneticValue">0.5</span></label>
+                <input type="range" id="magneticSlider" min="0" max="2.0" step="0.1" value="0.5">
+            </div>
+            
+            <div class="control-group">
+                <label>View Distance: <span class="value" id="distanceValue">15</span></label>
+                <input type="range" id="distanceSlider" min="3" max="50" step="1" value="15">
+            </div>
+            
+            <div class="control-group">
+                <label>Time Dilation: <span class="value" id="timeSpeedValue">1.0</span>x</label>
+                <input type="range" id="timeSlider" min="0.1" max="5.0" step="0.1" value="1.0">
+            </div>
+            
+            <button onclick="resetView()">Reset View</button>
+            <button onclick="toggleRotation()">Toggle Auto-Rotate</button>
+            <button onclick="toggleJets()">Toggle Jets</button>
+            <button onclick="addTestParticle()">Add Test Particle</button>
+        </div>
+        
+        <div id="info">
+            <strong style="color: #00ffff;">RELATIVISTIC PHYSICS</strong><br><br>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    • Schwarzschild Radius: <span class="physics-value" id="schwarzschild">--</span><br>
+                    • Event Horizon: <span class="physics-value" id="eventHorizon">--</span><br>
+                    • Photon Sphere: <span class="physics-value" id="photonSphere">--</span><br>
+                    • ISCO: <span class="physics-value" id="isco">--</span><br>
+                </div>
+                <div>
+                    • Time Dilation: <span class="physics-value" id="timeDilation">--</span><br>
+                    • Frame Dragging: <span class="physics-value" id="frameDragging">--</span><br>
+                    • Hawking Temp: <span class="physics-value" id="hawkingTemp">--</span><br>
+                    • Ergosphere: <span class="physics-value" id="ergosphere">--</span><br>
+                </div>
+            </div>
+            <div id="warningText" style="margin-top: 10px;"></div>
+        </div>
+        
+        <div id="performance">
+            <strong>PERFORMANCE</strong><br>
+            FPS: <span id="fps">--</span><br>
+            Particles: <span id="particleCount">--</span><br>
+            Draw Calls: <span id="drawCalls">--</span>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let scene, camera, renderer, blackHole, accretionDisk, starField, jets;
+        let orbitingDebris = [];
+        let testParticles = [];
+        let autoRotate = true;
+        let showJets = false;
+        let time = 0;
+        let frameCount = 0;
+        let lastTime = performance.now();
+        
+        // Physics constants (in natural units)
+        const G = 6.67430e-11;
+        const c = 299792458;
+        const M_sun = 1.989e30;
+        const k_b = 1.380649e-23;
+        const h_bar = 1.054571817e-34;
+        
+        // Performance tracking
+        let fps = 0;
+        let particleCount = 0;
+        
+        // Enhanced shader materials
+        const blackHoleVertexShader = `
+            varying vec3 vPosition;
+            varying vec3 vNormal;
+            varying vec2 vUv;
+            varying vec3 vWorldPosition;
+            
+            void main() {
+                vPosition = position;
+                vNormal = normal;
+                vUv = uv;
+                vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        
+        const blackHoleFragmentShader = `
+            uniform float time;
+            uniform float mass;
+            uniform float spin;
+            uniform vec3 cameraPosition;
+            varying vec3 vPosition;
+            varying vec3 vNormal;
+            varying vec2 vUv;
+            varying vec3 vWorldPosition;
+            
+            vec3 hsv2rgb(vec3 c) {
+                vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+            }
+            
+            // Schwarzschild metric approximation
+            float schwarzschildRadius(float m) {
+                return 2.0 * m / 10.0; // Scaled for visualization
+            }
+            
+            // Kerr metric approximation for ergosphere
+            float ergosphereRadius(float m, float a, float theta) {
+                float rs = schwarzschildRadius(m);
+                return rs * 0.5 * (1.0 + sqrt(1.0 - (a*a) * sin(theta) * sin(theta)));
+            }
+            
+            void main() {
+                vec2 center = vec2(0.5, 0.5);
+                vec2 pos = vUv - center;
+                float dist = length(pos);
+                
+                // Calculate distance from camera
+                float camDist = length(vWorldPosition - cameraPosition);
+                
+                // Event horizon effect
+                float rs = schwarzschildRadius(mass);
+                float horizon = rs * 0.3;
+                
+                // Ergosphere calculation
+                float theta = acos(pos.y / max(dist, 0.001));
+                float ergosphere = ergosphereRadius(mass, spin, theta) * 0.4;
+                
+                if (dist < horizon) {
+                    // Inside event horizon - absolutely black
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                } else if (dist < ergosphere) {
+                    // Ergosphere - frame dragging effects
+                    float dragEffect = spin * 2.0;
+                    vec2 draggedPos = pos;
+                    draggedPos = mat2(cos(dragEffect), -sin(dragEffect), sin(dragEffect), cos(dragEffect)) * draggedPos;
+                    
+                    float intensity = 0.3 * (ergosphere - dist) / ergosphere;
+                    vec3 dragColor = vec3(0.2, 0.4, 0.8) * intensity;
+                    
+                    gl_FragColor = vec4(dragColor, 0.6);
+                } else {
+                    // Gravitational lensing with improved physics
+                    float lensing = horizon / (dist * dist);
+                    vec2 distorted = pos * (1.0 + lensing * 0.5);
+                    
+                    // Improved accretion disk visualization
+                    float angle = atan(distorted.y, distorted.x);
+                    float spiral = sin(angle * 5.0 + time * spin * 3.0 + dist * 20.0) * 0.5 + 0.5;
+                    
+                    // Temperature gradient based on distance
+                    float temp = 1.0 / (dist * 2.0 + 0.1);
+                    
+                    // Intensity falls off with distance
+                    float intensity = smoothstep(horizon * 1.2, horizon * 3.0, dist) * 
+                                    (1.0 - smoothstep(horizon * 3.0, horizon * 6.0, dist));
+                    
+                    // Color based on temperature (black body radiation)
+                    vec3 color;
+                    if (temp > 0.8) {
+                        color = vec3(1.0, 0.9, 0.8); // Hot white
+                    } else if (temp > 0.5) {
+                        color = vec3(1.0, 0.7, 0.3); // Orange
+                    } else {
+                        color = vec3(0.8, 0.3, 0.1); // Red
+                    }
+                    
+                    // Add spiral structure
+                    color *= (0.8 + spiral * 0.4);
+                    
+                    // Add flickering
+                    float flicker = 0.9 + 0.1 * sin(time * 10.0 + dist * 50.0);
+                    color *= flicker;
+                    
+                    // Apply relativistic beaming
+                    float beaming = 1.0 + spin * 0.5 * cos(angle + time * 2.0);
+                    color *= beaming;
+                    
+                    gl_FragColor = vec4(color * intensity, intensity * 0.8);
+                }
+            }
+        `;
+        
+        const accretionVertexShader = `
+            attribute float angle;
+            attribute float radius;
+            attribute float speed;
+            attribute float temperature;
+            uniform float time;
+            uniform float mass;
+            uniform float spin;
+            uniform float accretionRate;
+            varying vec3 vColor;
+            varying float vIntensity;
+            
+            vec3 blackBodyColor(float temp) {
+                // Simplified black body radiation
+                if (temp > 0.8) return vec3(1.0, 0.9, 0.8);
+                if (temp > 0.6) return vec3(1.0, 0.8, 0.5);
+                if (temp > 0.4) return vec3(1.0, 0.6, 0.2);
+                return vec3(0.8, 0.2, 0.0);
+            }
+            
+            void main() {
+                // Enhanced orbital mechanics
+                float kerrCorrection = 1.0 - spin * 0.1 / radius;
+                float rotationSpeed = speed * kerrCorrection * (1.0 + spin * 2.0);
+                float currentAngle = angle + rotationSpeed * time;
+                
+                // Vertical structure from turbulence
+                float turbulence = sin(currentAngle * 7.0 + time * 3.0) * 0.1 * sqrt(radius);
+                
+                vec3 pos = vec3(
+                    cos(currentAngle) * radius,
+                    sin(currentAngle) * radius,
+                    turbulence
+                );
+                
+                // Temperature based on orbital mechanics and accretion
+                float temp = temperature * accretionRate * (1.0 + spin * 0.5);
+                vIntensity = temp;
+                vColor = blackBodyColor(temp);
+                
+                // Relativistic effects on size
+                float gamma = 1.0 / sqrt(1.0 - (rotationSpeed * rotationSpeed) / (c * c * 0.01));
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = 2.0 * mass / 5.0 * (1.0 + temp) * gamma;
+            }
+        `;
+        
+        const accretionFragmentShader = `
+            varying vec3 vColor;
+            varying float vIntensity;
+            
+            void main() {
+                vec2 center = gl_PointCoord - vec2(0.5);
+                float dist = length(center);
+                
+                if (dist > 0.5) discard;
+                
+                // Gaussian profile for realistic particle appearance
+                float alpha = exp(-dist * dist * 8.0) * vIntensity;
+                
+                // Add some scintillation
+                float scintillation = 0.8 + 0.2 * sin(gl_FragCoord.x * 0.1 + gl_FragCoord.y * 0.1);
+                
+                gl_FragColor = vec4(vColor * scintillation, alpha);
+            }
+        `;
+        
+        // New jet shader
+        const jetVertexShader = `
+            attribute float velocity;
+            attribute float distance;
+            uniform float time;
+            uniform float mass;
+            uniform float spin;
+            uniform float magneticField;
+            varying vec3 vColor;
+            varying float vIntensity;
+            
+            void main() {
+                float jetSpeed = velocity * spin * magneticField;
+                float currentDistance = distance + jetSpeed * time;
+                
+                // Jet collimation
+                float collimation = 1.0 / (1.0 + currentDistance * 0.1);
+                
+                vec3 pos = position;
+                pos.z = currentDistance;
+                pos.xy *= collimation;
+                
+                // Synchrotron radiation color
+                float energy = jetSpeed * magneticField;
+                vColor = vec3(0.3 + energy * 0.7, 0.1 + energy * 0.5, 0.8);
+                vIntensity = energy * collimation;
+                
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                gl_PointSize = 3.0 * collimation * mass / 5.0;
+            }
+        `;
+        
+        const jetFragmentShader = `
+            varying vec3 vColor;
+            varying float vIntensity;
+            
+            void main() {
+                vec2 center = gl_PointCoord - vec2(0.5);
+                float dist = length(center);
+                
+                if (dist > 0.5) discard;
+                
+                float alpha = (1.0 - dist * 2.0) * vIntensity;
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `;
+
+        // Initialize the simulation
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 1);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Create enhanced star field
+            createEnhancedStarField();
+            
+            // Create black hole
+            createBlackHole();
+            
+            // Create enhanced accretion disk
+            createEnhancedAccretionDisk();
+            
+            // Create relativistic jets
+            createJets();
+            
+            // Create orbiting debris
+            createOrbitingDebris();
+            
+            // Camera position
+            camera.position.set(0, 5, 15);
+            camera.lookAt(0, 0, 0);
+            
+            // Event listeners
+            setupControls();
+            
+            // Remove loading screen
+            document.getElementById('loading').style.display = 'none';
+            
+            // Start animation
+            animate();
+        }
+        
+        function createEnhancedStarField() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starCount = 5000;
+            const positions = new Float32Array(starCount * 3);
+            const colors = new Float32Array(starCount * 3);
+            const sizes = new Float32Array(starCount);
+            
+            for (let i = 0; i < starCount; i++) {
+                // More realistic galaxy distribution
+                const radius = 200 + Math.random() * 400;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                
+                positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i * 3 + 2] = radius * Math.cos(phi);
+                
+                // Stellar classification colors
+                const starType = Math.random();
+                if (starType < 0.1) {
+                    colors[i * 3] = 0.6; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 1.0; // O-type
+                } else if (starType < 0.2) {
+                    colors[i * 3] = 0.8; colors[i * 3 + 1] = 0.9; colors[i * 3 + 2] = 1.0; // B-type
+                } else if (starType < 0.3) {
+                    colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 1.0; // A-type
+                } else if (starType < 0.5) {
+                    colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 0.8; // F-type
+                } else if (starType < 0.8) {
+                    colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.9; colors[i * 3 + 2] = 0.6; // G-type
+                } else {
+                    colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.6; colors[i * 3 + 2] = 0.3; // K/M-type
+                }
+                
+                sizes[i] = 1 + Math.random() * 3;
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            starsGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            const starsMaterial = new THREE.PointsMaterial({
+                size: 2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.9,
+                sizeAttenuation: false
+            });
+            
+            starField = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(starField);
+        }
+        
+        function createBlackHole() {
+            const geometry = new THREE.SphereGeometry(2, 128, 128);
+            
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    mass: { value: 5.0 },
+                    spin: { value: 0.5 },
+                    cameraPosition: { value: camera.position }
+                },
+                vertexShader: blackHoleVertexShader,
+                fragmentShader: blackHoleFragmentShader,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            
+            blackHole = new THREE.Mesh(geometry, material);
+            scene.add(blackHole);
+        }
+        
+        function createEnhancedAccretionDisk() {
+            const particleCount = 10000;
+            const geometry = new THREE.BufferGeometry();
+            
+            const positions = new Float32Array(particleCount * 3);
+            const angles = new Float32Array(particleCount);
+            const radii = new Float32Array(particleCount);
+            const speeds = new Float32Array(particleCount);
+            const temperatures = new Float32Array(particleCount);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const radius = 3 + Math.random() * 12;
+                const angle = Math.random() * Math.PI * 2;
+                
+                positions[i * 3] = Math.cos(angle) * radius;
+                positions[i * 3 + 1] = Math.sin(angle) * radius;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 0.3 * Math.sqrt(radius);
+                
+                angles[i] = angle;
+                radii[i] = radius;
+                speeds[i] = 0.7 / Math.sqrt(radius); // Keplerian motion
+                temperatures[i] = 1.0 / (radius * 0.3 + 0.1); // Temperature profile
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('angle', new THREE.BufferAttribute(angles, 1));
+            geometry.setAttribute('radius', new THREE.BufferAttribute(radii, 1));
+            geometry.setAttribute('speed', new THREE.BufferAttribute(speeds, 1));
+            geometry.setAttribute('temperature', new THREE.BufferAttribute(temperatures, 1));
+            
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    mass: { value: 5.0 },
+                    spin: { value: 0.5 },
+                    accretionRate: { value: 0.7 }
+                },
+                vertexShader: accretionVertexShader,
+                fragmentShader: accretionFragmentShader,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            
+            accretionDisk = new THREE.Points(geometry, material);
+            scene.add(accretionDisk);
+            
+            particleCount = 10000;
+        }
+        
+        function createJets() {
+            const jetParticles = 2000;
+            const jetGeometry = new THREE.BufferGeometry();
+            
+            const positions = new Float32Array(jetParticles * 3);
+            const velocities = new Float32Array(jetParticles);
+            const distances = new Float32Array(jetParticles);
+            
+            for (let i = 0; i < jetParticles; i++) {
+                const isTopJet = i < jetParticles / 2;
+                const theta = Math.random() * Math.PI * 0.1; // Collimation angle
+                const phi = Math.random() * Math.PI * 2;
+                
+                positions[i * 3] = Math.sin(theta) * Math.cos(phi);
+                positions[i * 3 + 1] = Math.sin(theta) * Math.sin(phi);
+                positions[i * 3 + 2] = isTopJet ? 0 : 0;
+                
+                velocities[i] = 0.5 + Math.random() * 0.5;
+                distances[i] = Math.random() * 20;
+            }
+            
+            jetGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            jetGeometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 1));
+            jetGeometry.setAttribute('distance', new THREE.BufferAttribute(distances, 1));
+            
+            const jetMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    mass: { value: 5.0 },
+                    spin: { value: 0.5 },
+                    magneticField: { value: 0.5 }
+                },
+                vertexShader: jetVertexShader,
+                fragmentShader: jetFragmentShader,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            
+            jets = new THREE.Points(jetGeometry, jetMaterial);
+            jets.visible = false;
+            scene.add(jets);
+        }
+        
+        function createOrbitingDebris() {
+            for (let i = 0; i < 30; i++) {
+                const geometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.3, 8, 8);
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(Math.random(), 0.8, 0.6),
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const debris = new THREE.Mesh(geometry, material);
+                
+                const radius = 8 + Math.random() * 25;
+                const angle = Math.random() * Math.PI * 2;
+                const inclination = (Math.random() - 0.5) * 0.8;
+                
+                debris.userData = {
+                    radius: radius,
+                    angle: angle,
+                    speed: 0.4 / Math.sqrt(radius),
+                    inclination: inclination,
+                    originalColor: debris.material.color.clone()
+                };
+                
+                orbitingDebris.push(debris);
+                scene.add(debris);
+            }
+        }
+        
+        function addTestParticle() {
+            const geometry = new THREE.SphereGeometry(0.05, 8, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 1.0
+            });
+            
+            const particle = new THREE.Mesh(geometry, material);
+            
+            const radius = 20 + Math.random() * 10;
+            const angle = Math.random() * Math.PI * 2;
+            
+            particle.position.x = Math.cos(angle) * radius;
+            particle.position.y = Math.sin(angle) * radius;
+            particle.position.z = (Math.random() - 0.5) * 2;
+            
+            particle.userData = {
+                radius: radius,
+                angle: angle,
+                speed: 0.3 / Math.sqrt(radius),
+                velocity: new THREE.Vector3(
+                    -Math.sin(angle) * 0.3 / Math.sqrt(radius),
+                    Math.cos(angle) * 0.3 / Math.sqrt(radius),
+                    0
+                ),
+                trail: []
+            };
+            
+            testParticles.push(particle);
+            scene.add(particle);
+        }
+        
+        function setupControls() {
+            const massSlider = document.getElementById('massSlider');
+            const spinSlider = document.getElementById('spinSlider');
+            const accretionSlider = document.getElementById('accretionSlider');
+            const magneticSlider = document.getElementById('magneticSlider');
+            const distanceSlider = document.getElementById('distanceSlider');
+            const timeSlider = document.getElementById('timeSlider');
+            
+            massSlider.addEventListener('input', (e) => {
+                const mass = parseFloat(e.target.value);
+                updateMass(mass);
+                document.getElementById('massValue').textContent = mass.toFixed(1);
+            });
+            
+            spinSlider.addEventListener('input', (e) => {
+                const spin = parseFloat(e.target.value);
+                updateSpin(spin);
+                document.getElementById('spinValue').textContent = spin.toFixed(3);
+            });
+            
+            accretionSlider.addEventListener('input', (e) => {
+                const rate = parseFloat(e.target.value);
+                updateAccretionRate(rate);
+                document.getElementById('accretionValue').textContent = rate.toFixed(1);
+            });
+            
+            magneticSlider.addEventListener('input', (e) => {
+                const field = parseFloat(e.target.value);
+                updateMagneticField(field);
+                document.getElementById('magneticValue').textContent = field.toFixed(1);
+            });
+            
+            distanceSlider.addEventListener('input', (e) => {
+                const distance = parseFloat(e.target.value);
+                updateViewDistance(distance);
+                document.getElementById('distanceValue').textContent = distance;
+            });
+            
+            timeSlider.addEventListener('input', (e) => {
+                const speed = parseFloat(e.target.value);
+                document.getElementById('timeSpeedValue').textContent = speed.toFixed(1);
+            });
+            
+            // Enhanced mouse controls
+            let mouseDown = false;
+            let mouseX = 0, mouseY = 0;
+            
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                mouseDown = true;
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            
+            renderer.domElement.addEventListener('mouseup', () => {
+                mouseDown = false;
+            });
+            
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (!mouseDown) return;
+                
+                const deltaX = e.clientX - mouseX;
+                const deltaY = e.clientY - mouseY;
+                
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                
+                spherical.theta -= deltaX * 0.01;
+                spherical.phi += deltaY * 0.01;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+                
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            
+            // Enhanced zoom with limits
+            renderer.domElement.addEventListener('wheel', (e) => {
+                const spherical = new THREE.Spherical();
+                spherical.setFromVector3(camera.position);
+                spherical.radius += e.deltaY * 0.01;
+                spherical.radius = Math.max(3, Math.min(100, spherical.radius));
+                camera.position.setFromSpherical(spherical);
+                camera.lookAt(0, 0, 0);
+            });
+        }
+        
+        function updateMass(mass) {
+            blackHole.material.uniforms.mass.value = mass;
+            accretionDisk.material.uniforms.mass.value = mass;
+            jets.material.uniforms.mass.value = mass;
+            
+            // Update black hole size
+            const scale = Math.cbrt(mass / 5.0);
+            blackHole.scale.setScalar(scale);
+            
+            updatePhysicsInfo();
+        }
+        
+        function updateSpin(spin) {
+            blackHole.material.uniforms.spin.value = spin;
+            accretionDisk.material.uniforms.spin.value = spin;
+            jets.material.uniforms.spin.value = spin;
+            
+            updatePhysicsInfo();
+        }
+        
+        function updateAccretionRate(rate) {
+            accretionDisk.material.uniforms.accretionRate.value = rate;
+        }
+        
+        function updateMagneticField(field) {
+            jets.material.uniforms.magneticField.value = field;
+        }
+        
+        function updateViewDistance(distance) {
+            const spherical = new THREE.Spherical();
+            spherical.setFromVector3(camera.position);
+            spherical.radius = distance;
+            camera.position.setFromSpherical(spherical);
+            camera.lookAt(0, 0, 0);
+        }
+        
+        function updatePhysicsInfo() {
+            const mass = blackHole.material.uniforms.mass.value;
+            const spin = blackHole.material.uniforms.spin.value;
+            
+            // Calculate physical parameters
+            const rs = 2 * G * mass * M_sun / (c * c) / 1000; // Schwarzschild radius in km
+            const rg = rs / 2; // Gravitational radius
+            const rph = 3 * rg; // Photon sphere
+            
+            // ISCO (Innermost Stable Circular Orbit) for Kerr metric
+            const Z1 = 1 + Math.pow(1 - spin*spin, 1/3) * (Math.pow(1 + spin, 1/3) + Math.pow(1 - spin, 1/3));
+            const Z2 = Math.sqrt(3 * spin*spin + Z1*Z1);
+            const risco = (3 + Z2 - Math.sqrt((3 - Z1) * (3 + Z1 + 2*Z2))) * rg;
+            
+            // Ergosphere radius
+            const rerg = rg * (1 + Math.sqrt(1 - spin*spin));
+            
+            // Hawking temperature
+            const kB = 1.380649e-23;
+            const hbar = 1.054571817e-34;
+            const hawkingTemp = hbar * c*c*c / (8 * Math.PI * G * mass * M_sun * kB);
+            
+            // Time dilation at observer position
+            const r_obs = camera.position.length() * 1000; // Convert to km
+            const timeDilation = 1 / Math.sqrt(1 - rs / r_obs);
+            
+            // Update display
+            document.getElementById('schwarzschild').textContent = `${rs.toFixed(1)} km`;
+            document.getElementById('eventHorizon').textContent = `${(rs/2).toFixed(1)} km`;
+            document.getElementById('photonSphere').textContent = `${rph.toFixed(1)} km`;
+            document.getElementById('isco').textContent = `${risco.toFixed(1)} km`;
+            document.getElementById('timeDilation').textContent = `${timeDilation.toFixed(3)}×`;
+            document.getElementById('frameDragging').textContent = `${(spin * 100).toFixed(1)}%`;
+            document.getElementById('hawkingTemp').textContent = `${hawkingTemp.toExponential(2)} K`;
+            document.getElementById('ergosphere').textContent = `${(rerg * 1000).toFixed(1)} km`;
+            
+            // Warning for extreme conditions
+            const warningText = document.getElementById('warningText');
+            if (spin > 0.99) {
+                warningText.innerHTML = '<span class="warning">⚠️ EXTREME KERR BLACK HOLE</span>';
+            } else if (mass > 50) {
+                warningText.innerHTML = '<span class="warning">⚠️ SUPERMASSIVE BLACK HOLE</span>';
+            } else if (camera.position.length() < 5) {
+                warningText.innerHTML = '<span class="warning">⚠️ APPROACHING EVENT HORIZON</span>';
+            } else {
+                warningText.innerHTML = '';
+            }
+        }
+        
+        function resetView() {
+            camera.position.set(0, 5, 15);
+            camera.lookAt(0, 0, 0);
+            
+            // Reset sliders
+            document.getElementById('massSlider').value = 5;
+            document.getElementById('spinSlider').value = 0.5;
+            document.getElementById('accretionSlider').value = 0.7;
+            document.getElementById('magneticSlider').value = 0.5;
+            document.getElementById('distanceSlider').value = 15;
+            document.getElementById('timeSlider').value = 1.0;
+            
+            // Update displays
+            document.getElementById('massValue').textContent = '5.0';
+            document.getElementById('spinValue').textContent = '0.500';
+            document.getElementById('accretionValue').textContent = '0.7';
+            document.getElementById('magneticValue').textContent = '0.5';
+            document.getElementById('distanceValue').textContent = '15';
+            document.getElementById('timeSpeedValue').textContent = '1.0';
+            
+            // Reset parameters
+            updateMass(5.0);
+            updateSpin(0.5);
+            updateAccretionRate(0.7);
+            updateMagneticField(0.5);
+        }
+        
+        function toggleRotation() {
+            autoRotate = !autoRotate;
+        }
+        
+        function toggleJets() {
+            showJets = !showJets;
+            jets.visible = showJets;
+        }
+        
+        function updatePerformance() {
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastTime;
+            
+            if (deltaTime >= 1000) {
+                fps = Math.round(frameCount * 1000 / deltaTime);
+                frameCount = 0;
+                lastTime = currentTime;
+                
+                document.getElementById('fps').textContent = fps;
+                document.getElementById('particleCount').textContent = particleCount.toLocaleString();
+                document.getElementById('drawCalls').textContent = scene.children.length;
+            }
+            
+            frameCount++;
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const timeSpeed = parseFloat(document.getElementById('timeSlider').value);
+            time += 0.016 * timeSpeed;
+            
+            // Update shader uniforms
+            blackHole.material.uniforms.time.value = time;
+            blackHole.material.uniforms.cameraPosition.value = camera.position;
+            accretionDisk.material.uniforms.time.value = time;
+            jets.material.uniforms.time.value = time;
+            
+            // Auto-rotate camera
+            if (autoRotate) {
+                const radius = camera.position.length();
+                const currentAngle = Math.atan2(camera.position.z, camera.position.x);
+                const newAngle = currentAngle + 0.005;
+                
+                camera.position.x = Math.cos(newAngle) * radius;
+                camera.position.z = Math.sin(newAngle) * radius;
+                camera.lookAt(0, 0, 0);
+            }
+            
+            // Update orbiting debris with relativistic effects
+            const mass = blackHole.material.uniforms.mass.value;
+            const spin = blackHole.material.uniforms.spin.value;
+            
+            orbitingDebris.forEach(debris => {
+                const data = debris.userData;
+                
+                // Relativistic orbital mechanics
+                const kerrCorrection = 1 - spin * 0.1 / data.radius;
+                const adjustedSpeed = data.speed * kerrCorrection;
+                
+                data.angle += adjustedSpeed * 0.016 * timeSpeed;
+                
+                debris.position.x = Math.cos(data.angle) * data.radius;
+                debris.position.y = Math.sin(data.angle) * data.radius;
+                debris.position.z = Math.sin(data.angle * 3) * data.inclination;
+                
+                // Gravitational redshift and time dilation
+                const r = debris.position.length();
+                const rs = 2 * mass / 10; // Scaled Schwarzschild radius
+                
+                if (r > rs) {
+                    const redshift = Math.sqrt(1 - rs / r);
+                    const newColor = data.originalColor.clone();
+                    newColor.multiplyScalar(redshift);
+                    debris.material.color = newColor;
+                    
+                    // Fade out objects approaching event horizon
+                    if (r < rs * 2) {
+                        debris.material.opacity = (r - rs) / rs;
+                    }
+                }
+            });
+            
+            // Update test particles
+            testParticles.forEach((particle, index) => {
+                const data = particle.userData;
+                const r = particle.position.length();
+                const rs = 2 * mass / 10;
+                
+                if (r > rs * 1.1) {
+                    // Simple geodesic integration
+                    const force = new THREE.Vector3().copy(particle.position).normalize().multiplyScalar(-mass / (r * r));
+                    data.velocity.add(force.multiplyScalar(0.001 * timeSpeed));
+                    particle.position.add(data.velocity.clone().multiplyScalar(0.016 * timeSpeed));
+                    
+                    // Add to trail
+                    if (data.trail.length > 100) {
+                        data.trail.shift();
+                    }
+                    data.trail.push(particle.position.clone());
+                    
+                } else {
+                    // Remove particle if it crosses event horizon
+                    scene.remove(particle);
+                    testParticles.splice(index, 1);
+                }
+            });
+            
+            // Rotate star field
+            starField.rotation.y += 0.0001 * timeSpeed;
+            
+            // Update physics info
+            updatePhysicsInfo();
+            
+            // Update performance metrics
+            updatePerformance();
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
